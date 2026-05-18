@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Midnight Archive</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1b1f3a 0%, #070812 45%, #020205 100%);
+      color: #e9e9f2;
+      font-family: "Courier New", monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.03),
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    .terminal {
+      width: min(900px, 100%);
+      min-height: min(720px, 92vh);
+      background: rgba(4, 6, 18, 0.92);
+      border: 1px solid rgba(155, 155, 255, 0.25);
+      border-radius: 18px;
+      box-shadow: 0 0 40px rgba(75, 63, 190, 0.35), inset 0 0 25px rgba(255, 255, 255, 0.03);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot:nth-child(1) {
+      background: #ff5f56;
+    }
+
+    .dot:nth-child(2) {
+      background: #ffbd2e;
+    }
+
+    .dot:nth-child(3) {
+      background: #27c93f;
+    }
+
+    .title {
+      margin-left: 10px;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: #cfcfff;
+      text-transform: uppercase;
+    }
+
+    .content {
+      padding: 24px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .boot {
+      color: #7bf7c1;
+      text-shadow: 0 0 10px rgba(123, 247, 193, 0.35);
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .intro {
+      line-height: 1.6;
+      color: #e4e1ff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.035);
+      padding: 16px;
+      border-radius: 14px;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: 310px 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid rgba(180, 180, 255, 0.18);
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.025);
+    }
+
+    .panel-title {
+      margin: 0 0 14px;
+      color: #fff3a8;
+      letter-spacing: 1px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .file-risk {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 230px;
+    }
+
+    .file-icon {
+      position: relative;
+      width: 142px;
+      height: 182px;
+      border: 3px solid rgba(255, 255, 255, 0.88);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(123, 247, 193, 0.03));
+      box-shadow: 0 0 22px rgba(123, 247, 193, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.04);
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .file-corner {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 40px;
+      height: 40px;
+      border-left: 3px solid rgba(255, 255, 255, 0.88);
+      border-bottom: 3px solid rgba(255, 255, 255, 0.88);
+      background: rgba(4, 6, 18, 0.95);
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+      border-bottom-left-radius: 8px;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      height: 3px;
+      background: rgba(123, 247, 193, 0.75);
+      box-shadow: 0 0 12px rgba(123, 247, 193, 0.55);
+      opacity: 0.9;
+      animation: scan 2.4s infinite ease-in-out;
+    }
+
+    @keyframes scan {
+      0%, 100% {
+        top: 34px;
+      }
+      50% {
+        top: 142px;
+      }
+    }
+
+    .file-line {
+      position: absolute;
+      left: 20px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .file-line.one {
+      top: 54px;
+      width: 70px;
+    }
+
+    .file-line.two {
+      top: 76px;
+      width: 92px;
+    }
+
+    .file-line.three {
+      top: 98px;
+      width: 58px;
+    }
+
+    .crack {
+      position: absolute;
+      width: 3px;
+      background: #ff8f9f;
+      opacity: 0;
+      box-shadow: 0 0 10px rgba(255, 143, 159, 0.75);
+      transform-origin: top center;
+      transition: opacity 0.25s ease;
+    }
+
+    .crack-one {
+      top: 52px;
+      left: 70px;
+      height: 46px;
+      transform: rotate(24deg);
+    }
+
+    .crack-two {
+      top: 88px;
+      left: 90px;
+      height: 38px;
+      transform: rotate(-38deg);
+    }
+
+    .crack-three {
+      top: 104px;
+      left: 58px;
+      height: 52px;
+      transform: rotate(38deg);
+    }
+
+    .crack-four {
+      top: 62px;
+      left: 52px;
+      height: 32px;
+      transform: rotate(-44deg);
+    }
+
+    .warning-symbol {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      width: 44px;
+      height: 44px;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255, 243, 168, 0.88);
+      border-radius: 50%;
+      color: #fff3a8;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(255, 243, 168, 0.65);
+    }
+
+    .file-risk[data-damage="1"] .crack-one,
+    .file-risk[data-damage="2"] .crack-one,
+    .file-risk[data-damage="3"] .crack-one,
+    .file-risk[data-damage="4"] .crack-one,
+    .file-risk[data-damage="5"] .crack-one,
+    .file-risk[data-damage="6"] .crack-one {
+      opacity: 1;
+    }
+
+    .file-risk[data-damage="2"] .crack-two,
+    .file-risk[data-damage="3"] .crack-two,
+    .file-risk[data-damage="4"] .crack-two,
+    .file-risk[data-damage="5"] .crack-two,
+    .file-risk[data-damage="6"] .crack-two {
+      opacity: 1;
+    }
+
+    .file-risk[data-damage="3"] .crack-three,
+    .file-risk[data-damage="4"] .crack-three,
+    .file-risk[data-damage="5"] .crack-three,
+    .file-risk[data-damage="6"] .crack-three {
+      opacity: 1;
+    }
+
+    .file-risk[data-damage="4"] .crack-four,
+    .file-risk[data-damage="5"] .crack-four,
+    .file-risk[data-damage="6"] .crack-four {
+      opacity: 1;
+    }
+
+    .file-risk[data-damage="5"] .warning-symbol,
+    .file-risk[data-damage="6"] .warning-symbol {
+      display: flex;
+    }
+
+    .file-risk[data-damage="6"] .file-icon {
+      border-color: rgba(255, 143, 159, 0.9);
+      box-shadow: 0 0 28px rgba(255, 143, 159, 0.25), inset 0 0 18px rgba(255, 143, 159, 0.07);
+      transform: rotate(-2deg);
+    }
+
+    .file-risk[data-damage="6"] .scan-line {
+      display: none;
+    }
+
+    .status-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+      font-size: 14px;
+      color: #cfcfff;
+    }
+
+    .integrity-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .integrity-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #7bf7c1, #fff3a8);
+      transition: width 0.25s ease;
+    }
+
+    .message-box {
+      display: grid;
+      gap: 18px;
+    }
+
+    .corrupt-label {
+      color: #7bf7c1;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .phrase {
+      font-size: clamp(26px, 5vw, 44px);
+      line-height: 1.6;
+      color: #ffffff;
+      text-align: center;
+      padding: 22px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      overflow-wrap: anywhere;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 34px;
+      flex-wrap: wrap;
+    }
+
+    .word-block {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .letter-slot {
+      min-width: 28px;
+      display: inline-flex;
+      justify-content: center;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.18);
+      padding-bottom: 4px;
+    }
+
+    .letter-slot.revealed {
+      border-bottom-color: transparent;
+    }
+
+    .log {
+      min-height: 88px;
+      color: #e4e1ff;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    input {
+      min-width: 0;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(180, 180, 255, 0.25);
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-family: inherit;
+      font-size: 16px;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: rgba(123, 247, 193, 0.65);
+      box-shadow: 0 0 12px rgba(123, 247, 193, 0.18);
+    }
+
+    input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    button {
+      background: linear-gradient(135deg, #4941b8, #7a5cff);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 18px;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.15);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .used {
+      color: #9ad7ff;
+      font-size: 14px;
+      min-height: 22px;
+      overflow-wrap: anywhere;
+    }
+
+    .reveal {
+      display: none;
+      color: #fff3a8;
+      text-shadow: 0 0 14px rgba(255, 243, 168, 0.55);
+      border: 1px solid rgba(255, 243, 168, 0.28);
+      background: rgba(255, 243, 168, 0.06);
+      padding: 18px;
+      border-radius: 14px;
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 2px;
+      line-height: 1.5;
+    }
+
+    .danger {
+      color: #ff8f9f;
+    }
+
+    .success {
+      color: #7bf7c1;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+        overflow: auto;
+      }
+
+      .terminal {
+        min-height: auto;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .game {
+        grid-template-columns: 1fr;
+      }
+
+      .phrase {
+        letter-spacing: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="terminal">
+    <div class="topbar">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="title">Midnight Archive</span>
+    </div>
+
+    <section class="content">
+      <div class="boot">&gt; VERBINDING GEMAAKT
+&gt; BESCHADIGD BERICHT GEVONDEN
+&gt; HERSTELPROTOCOL GESTART</div>
+
+      <div class="intro">
+        Een aanwijzing is onderschept van de GalaCie.<br />
+        Maar delen van het bestand zijn corrupt geraakt.<br />
+        Help mee het bericht te herstellen.
+      </div>
+
+      <section class="game">
+        <aside class="panel">
+          <h2 class="panel-title">Bestandsintegriteit</h2>
+          <div class="file-risk" id="fileRisk" data-damage="0">
+            <div class="file-icon">
+              <div class="file-corner"></div>
+              <div class="scan-line"></div>
+              <div class="file-line one"></div>
+              <div class="file-line two"></div>
+              <div class="file-line three"></div>
+              <div class="crack crack-one"></div>
+              <div class="crack crack-two"></div>
+              <div class="crack crack-three"></div>
+              <div class="crack crack-four"></div>
+              <div class="warning-symbol">!</div>
+            </div>
+          </div>
+          <div class="status-grid">
+            <div>Fouten: <span id="mistakes">0</span>/<span id="maxMistakes">6</span></div>
+            <div>
+              Bestandsintegriteit: <span id="integrity">100</span>%
+              <div class="integrity-bar">
+                <div class="integrity-fill" id="integrityFill"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel message-box">
+          <div class="corrupt-label">Corrupt berichtfragment</div>
+          <div class="phrase" id="phrase"></div>
+          <div class="log" id="log">Voer één letter in om het bericht te herstellen.</div>
+          <form class="controls" id="form">
+            <input id="letterInput" type="text" maxlength="1" autocomplete="off" aria-label="Voer een letter in" />
+            <button id="submitButton" type="submit">HERSTEL</button>
+          </form>
+          <div class="used">Gebruikte letters: <span id="usedLetters">geen</span></div>
+          <div class="reveal" id="reveal">BERICHT HERSTELD<br />LET OP DE MENUKAART</div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const targetPhrase = "LET OP DE MENUKAART";
+    const maxMistakes = 6;
+    const guessedLetters = new Set();
+    let mistakes = 0;
+    let gameOver = false;
+
+    const phraseElement = document.getElementById("phrase");
+    const fileRiskElement = document.getElementById("fileRisk");
+    const mistakesElement = document.getElementById("mistakes");
+    const maxMistakesElement = document.getElementById("maxMistakes");
+    const integrityElement = document.getElementById("integrity");
+    const integrityFill = document.getElementById("integrityFill");
+    const logElement = document.getElementById("log");
+    const form = document.getElementById("form");
+    const letterInput = document.getElementById("letterInput");
+    const submitButton = document.getElementById("submitButton");
+    const usedLettersElement = document.getElementById("usedLetters");
+    const revealElement = document.getElementById("reveal");
+
+    maxMistakesElement.textContent = maxMistakes;
+
+    function normalizeLetter(value) {
+      return value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+    }
+
+    function getDisplayedPhrase() {
+      return targetPhrase
+        .split(" ")
+        .map(word => {
+          const letters = word
+            .split("")
+            .map(character => {
+              const revealed = guessedLetters.has(character);
+              const value = revealed ? character : "_";
+              return `<span class="letter-slot ${revealed ? "revealed" : ""}">${value}</span>`;
+            })
+            .join("");
+
+          return `<div class="word-block">${letters}</div>`;
+        })
+        .join("");
+    }
+
+    function hasWon() {
+      return targetPhrase
+        .split("")
+        .every(character => character === " " || guessedLetters.has(character));
+    }
+
+    function updateScreen() {
+      const integrity = Math.max(0, Math.round(100 - (mistakes / maxMistakes) * 100));
+      phraseElement.innerHTML = getDisplayedPhrase();
+      fileRiskElement.dataset.damage = String(mistakes);
+      mistakesElement.textContent = mistakes;
+      integrityElement.textContent = integrity;
+      integrityFill.style.width = `${integrity}%`;
+      usedLettersElement.textContent = guessedLetters.size > 0 ? Array.from(guessedLetters).sort().join(", ") : "geen";
+    }
+
+    function disableGame() {
+      letterInput.disabled = true;
+      submitButton.disabled = true;
+    }
+
+    function createRestartButton() {
+      const restartButton = document.createElement("button");
+      restartButton.type = "button";
+      restartButton.textContent = "PROBEER OPNIEUW";
+      restartButton.addEventListener("click", () => window.location.reload());
+      return restartButton;
+    }
+
+    function endGameAsWin() {
+      gameOver = true;
+      phraseElement.innerHTML = '<div class="word-block"><span class="letter-slot revealed">L</span><span class="letter-slot revealed">E</span><span class="letter-slot revealed">T</span></div><div class="word-block"><span class="letter-slot revealed">O</span><span class="letter-slot revealed">P</span></div><div class="word-block"><span class="letter-slot revealed">D</span><span class="letter-slot revealed">E</span></div><div class="word-block"><span class="letter-slot revealed">M</span><span class="letter-slot revealed">E</span><span class="letter-slot revealed">N</span><span class="letter-slot revealed">U</span><span class="letter-slot revealed">K</span><span class="letter-slot revealed">A</span><span class="letter-slot revealed">A</span><span class="letter-slot revealed">R</span><span class="letter-slot revealed">T</span></div>';
+      logElement.innerHTML = "<span class='success'>HERSTEL SUCCESVOL.</span> Het volledige bericht is teruggevonden.";
+      revealElement.style.display = "block";
+      disableGame();
+    }
+
+    function endGameAsLoss() {
+      gameOver = true;
+      phraseElement.textContent = "HERSTEL AFGEBROKEN";
+      logElement.innerHTML = "<span class='danger'>HERSTEL MISLUKT.</span> Het bestand is te zwaar beschadigd. Probeer het opnieuw om de aanwijzing te herstellen.";
+      logElement.appendChild(document.createElement("br"));
+      logElement.appendChild(document.createElement("br"));
+      logElement.appendChild(createRestartButton());
+      revealElement.style.display = "none";
+      disableGame();
+    }
+
+    function handleGuess(letter) {
+      if (gameOver) {
+        return;
+      }
+
+      if (!letter) {
+        logElement.innerHTML = "Voer één geldige letter in.";
+        return;
+      }
+
+      if (guessedLetters.has(letter)) {
+        logElement.innerHTML = `Letter <span class='success'>${letter}</span> is al geprobeerd.`;
+        return;
+      }
+
+      guessedLetters.add(letter);
+
+      if (targetPhrase.includes(letter)) {
+        logElement.innerHTML = `Letter <span class='success'>${letter}</span> gevonden. Bericht gedeeltelijk hersteld.`;
+      } else {
+        mistakes += 1;
+        logElement.innerHTML = `Letter <span class='danger'>${letter}</span> niet gevonden. Bestandsintegriteit neemt af.`;
+      }
+
+      updateScreen();
+
+      if (hasWon()) {
+        endGameAsWin();
+        return;
+      }
+
+      if (mistakes >= maxMistakes) {
+        endGameAsLoss();
+      }
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const letter = normalizeLetter(letterInput.value);
+      letterInput.value = "";
+      handleGuess(letter);
+
+      if (!gameOver) {
+        letterInput.focus();
+      }
+    });
+
+    updateScreen();
+    letterInput.focus();
+  </script>
+</body>
+</html>
